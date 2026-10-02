@@ -6,16 +6,19 @@
 <meta name="theme-color" content="#C9A96E" />
 <title>Jose & Erika — 15 de Noviembre 2026</title>
 <meta name="description" content="Acompáñanos a celebrar nuestro gran día. Jose & Erika, 15 de Noviembre 2026, Hacienda San Rafael, Cali." />
+
 <!-- Open Graph -->
 <meta property="og:title" content="Jose & Erika — ¡Nos casamos!" />
 <meta property="og:description" content="15 de Noviembre 2026 · Hacienda San Rafael, Cali" />
 <meta property="og:image" content="https://images.unsplash.com/photo-1519741497674-611481863552?w=1200" />
 <meta property="og:type" content="website" />
+
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
 <style>
 /* ============ RESET & BASE ============ */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -169,7 +172,8 @@ h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; font-weight: 500; lin
   background-image:
     radial-gradient(circle at 20% 20%, rgba(201,169,110,0.10) 0%, transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(156,175,136,0.10) 0%, transparent 50%);
-  padding: clamp(7rem, 18vw, 7rem) 1.2rem clamp(2rem, 5vw, 3rem);
+  /* 👇 padding-top seguro: nav (~60px) + safe-area-inset-top + respiro */
+  padding: calc(5.5rem + env(safe-area-inset-top, 0px)) 1.2rem 2rem;
   text-align: center;
   color: var(--charcoal);
   border-bottom: 1px solid rgba(201,169,110,0.35);
@@ -723,6 +727,11 @@ h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; font-weight: 500; lin
   .place-body .btn { align-self: stretch; text-align: center; }
   .rsvp-form { padding: 1.5rem; }
   .gift-card { padding: 1.8rem 1.3rem; }
+
+  /* 👇 Ajuste seguro del banner en móvil */
+  .guest-banner {
+    padding: calc(5rem + env(safe-area-inset-top, 0px)) 1rem 1.8rem;
+  }
 }
 
 @media (max-width: 600px) {
@@ -747,12 +756,19 @@ h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; font-weight: 500; lin
   .btn { padding: 0.8rem 1.5rem; font-size: 0.75rem; }
   .music-btn { width: 46px; height: 46px; font-size: 1rem; }
   .gallery { grid-template-columns: repeat(2, 1fr); }
-  .guest-banner { padding: 4.5rem 1rem 1.5rem; }
+
+  /* 👇 Ajuste extra seguro del banner en pantallas pequeñas */
+  .guest-banner {
+    padding: calc(4.5rem + env(safe-area-inset-top, 0px)) 1rem 1.5rem;
+  }
   .guest-banner .guest-hello { font-size: 1.5rem; }
 }
 
 @supports (padding: max(0px)) {
   .nav { padding-top: max(0.7rem, env(safe-area-inset-top)); }
+  .guest-banner {
+    padding-top: max(5.5rem, calc(5.5rem + env(safe-area-inset-top)));
+  }
   .music-btn {
     bottom: max(1.2rem, env(safe-area-inset-bottom));
     right: max(1.2rem, env(safe-area-inset-right));
@@ -1117,7 +1133,7 @@ h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; font-weight: 500; lin
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button">¿Hay código de vestimenta? <i class="fas fa-chevron-down"></i></button>
-        <div class="faq-a"><p>Formal / Elegante. Evitar el blanco (reservado para la novia).</p></div>
+        <div class="faq-a"><p>Semi Formal / Elegante. Evitar el blanco (reservado para la novia).</p></div>
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button">¿Hasta cuándo puedo confirmar? <i class="fas fa-chevron-down"></i></button>
@@ -1125,7 +1141,7 @@ h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; font-weight: 500; lin
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button">¿Puedo llevar acompañante extra? <i class="fas fa-chevron-down"></i></button>
-        <div class="faq-a"><p>No se puede Escríbenos si tienes dudas.</p></div>
+        <div class="faq-a"><p>No se puede</p></div>
       </div>
     </div>
   </div>
@@ -1155,21 +1171,17 @@ h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; font-weight: 500; lin
 (function() {
   const params = new URLSearchParams(window.location.search);
   let nombre = params.get('nombre');
-
   if (nombre) {
     nombre = nombre.replace(/[<>]/g, '').trim().substring(0, 60);
-
     if (nombre.length > 0) {
       const banner = document.getElementById('guestBanner');
       const guestNameEl = document.getElementById('guestName');
       guestNameEl.textContent = nombre;
       banner.classList.add('active');
-
       const inputNombre = document.getElementById('nombre');
       if (inputNombre && !inputNombre.value) {
         inputNombre.value = nombre;
       }
-
       document.getElementById('hero').classList.add('with-banner');
       document.title = nombre + " · Jose & Erika — 15 de Noviembre 2026";
     }
@@ -1316,7 +1328,6 @@ const rsvpSuccess = document.getElementById('rsvpSuccess');
 
 rsvpForm.addEventListener('submit', e => {
   e.preventDefault();
-
   const nombre = document.getElementById('nombre').value.trim();
   const celular = document.getElementById('celular').value.trim();
 
@@ -1357,3 +1368,4 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
 </script>
 </body>
 </html>
+
