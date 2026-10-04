@@ -798,7 +798,7 @@ h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; font-weight: 500; lin
 <button id="musicBtn" class="music-btn" aria-label="Reproducir música">
   <i class="fas fa-music"></i>
 </button>
-<audio id="bgMusic" loop preload="none">
+<audio id="bgMusic" loop preload="auto">
   <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=wedding-114531.mp3" type="audio/mpeg" />
 </audio>
 
@@ -1258,47 +1258,72 @@ document.querySelectorAll('.faq-q').forEach(btn => {
 });
 
 /* ============ MÚSICA ============ */
+
+
+
+
+/* ============ MÚSICA ============ */
 const musicBtn = document.getElementById('musicBtn');
 const bgMusic = document.getElementById('bgMusic');
 let isPlaying = false;
+let autoplayDone = false;
 
-musicBtn.addEventListener('click', () => {
+// ===== Reproducir =====
+function playMusic() {
+  if (autoplayDone || isPlaying) return;
+  bgMusic.volume = 0.35;
+  const p = bgMusic.play();
+  if (p !== undefined) {
+    p.then(() => {
+      autoplayDone = true;
+      isPlaying = true;
+      musicBtn.classList.add('playing');
+      musicBtn.innerHTML = '<i class="fas fa-pause"></i>';
+      removeAutoplayListeners();
+    }).catch(() => {
+      // Falló, seguimos intentando en el próximo gesto
+    });
+  }
+}
+
+// ===== Botón de música (manual) =====
+musicBtn.addEventListener('click', (e) => {
+  e.stopPropagation(); // para que no choque con el autoplay
   if (isPlaying) {
     bgMusic.pause();
+    isPlaying = false;
     musicBtn.classList.remove('playing');
     musicBtn.innerHTML = '<i class="fas fa-music"></i>';
   } else {
     bgMusic.volume = 0.35;
     bgMusic.play().then(() => {
+      isPlaying = true;
+      autoplayDone = true;
       musicBtn.classList.add('playing');
       musicBtn.innerHTML = '<i class="fas fa-pause"></i>';
-    }).catch(err => console.log('Autoplay bloqueado:', err));
+    }).catch(err => console.log('Error al reproducir:', err));
   }
-  isPlaying = !isPlaying;
 });
 
-
-/* ============ AUTOPLAY AL PRIMER TOQUE / SCROLL ============ */
-function startMusicOnFirstInteraction() {
-  if (!isPlaying) {
-    bgMusic.volume = 0.35;
-    bgMusic.play().then(() => {
-      isPlaying = true;
-      musicBtn.classList.add('playing');
-      musicBtn.innerHTML = '<i class="fas fa-pause"></i>';
-    }).catch(() => {});
-  }
-  // Se quitan los listeners para que no se repita
-  document.removeEventListener('click', startMusicOnFirstInteraction);
-  document.removeEventListener('touchstart', startMusicOnFirstInteraction);
-  document.removeEventListener('scroll', startMusicOnFirstInteraction);
+// ===== Autoplay al primer gesto real =====
+function removeAutoplayListeners() {
+  ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown', 'wheel', 'scroll']
+    .forEach(evt => document.removeEventListener(evt, playMusic, true));
+  window.removeEventListener('scroll', playMusic, true);
+  window.removeEventListener('touchmove', playMusic, true);
 }
 
-document.addEventListener('click', startMusicOnFirstInteraction);
-document.addEventListener('touchstart', startMusicOnFirstInteraction);
-document.addEventListener('scroll', startMusicOnFirstInteraction, { once: true });
+// Registrar en document y window, en fase de captura (true)
+['click', 'touchstart', 'touchend', 'pointerdown', 'keydown', 'wheel', 'scroll']
+  .forEach(evt => document.addEventListener(evt, playMusic, { capture: true, passive: true }));
 
+window.addEventListener('scroll', playMusic, { capture: true, passive: true });
+window.addEventListener('touchmove', playMusic, { capture: true, passive: true });
 
+// Intento inmediato al cargar (por si el navegador lo permite)
+window.addEventListener('load', () => {
+  playMusic();
+});
 
 
 
