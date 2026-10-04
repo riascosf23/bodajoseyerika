@@ -799,7 +799,7 @@ h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; font-weight: 500; lin
   <i class="fas fa-music"></i>
 </button>
 <audio id="bgMusic" loop preload="auto">
-  <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=wedding-114531.mp3" type="audio/mpeg" />
+  <source src="https://lh3.googleusercontent.com/d/1HozCnMqMJLTirq8yNww07MDLAkOSvcMY" type="audio/mpeg" />
 </audio>
 
 <!-- NAV -->
@@ -1260,15 +1260,13 @@ document.querySelectorAll('.faq-q').forEach(btn => {
 /* ============ MÚSICA ============ */
 
 
-
-
 /* ============ MÚSICA ============ */
 const musicBtn = document.getElementById('musicBtn');
 const bgMusic = document.getElementById('bgMusic');
 let isPlaying = false;
 let autoplayDone = false;
 
-// ===== Reproducir =====
+// ===== Función principal para reproducir =====
 function playMusic() {
   if (autoplayDone || isPlaying) return;
   bgMusic.volume = 0.35;
@@ -1279,16 +1277,16 @@ function playMusic() {
       isPlaying = true;
       musicBtn.classList.add('playing');
       musicBtn.innerHTML = '<i class="fas fa-pause"></i>';
-      removeAutoplayListeners();
+      removeAllListeners();
     }).catch(() => {
-      // Falló, seguimos intentando en el próximo gesto
+      // El navegador aún no permite, se reintentará en el próximo gesto
     });
   }
 }
 
-// ===== Botón de música (manual) =====
+// ===== Botón flotante de música (manual) =====
 musicBtn.addEventListener('click', (e) => {
-  e.stopPropagation(); // para que no choque con el autoplay
+  e.stopPropagation();
   if (isPlaying) {
     bgMusic.pause();
     isPlaying = false;
@@ -1305,22 +1303,48 @@ musicBtn.addEventListener('click', (e) => {
   }
 });
 
-// ===== Autoplay al primer gesto real =====
-function removeAutoplayListeners() {
-  ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown', 'wheel', 'scroll']
-    .forEach(evt => document.removeEventListener(evt, playMusic, true));
-  window.removeEventListener('scroll', playMusic, true);
-  window.removeEventListener('touchmove', playMusic, true);
+// ===== Autoplay: primer toque, clic o scroll =====
+function onFirstGesture() {
+  playMusic();
 }
 
-// Registrar en document y window, en fase de captura (true)
-['click', 'touchstart', 'touchend', 'pointerdown', 'keydown', 'wheel', 'scroll']
-  .forEach(evt => document.addEventListener(evt, playMusic, { capture: true, passive: true }));
+function removeAllListeners() {
+  ['click', 'touchstart', 'touchend', 'pointerdown', 'pointerup', 'keydown']
+    .forEach(evt => document.removeEventListener(evt, onFirstGesture, true));
+  window.removeEventListener('touchmove', onFirstGesture, true);
+  window.removeEventListener('touchstart', onFirstGesture, true);
+  window.removeEventListener('scroll', onFirstGesture, true);
+  window.removeEventListener('wheel', onFirstGesture, true);
+  document.removeEventListener('scroll', onFirstGesture, true);
+  document.removeEventListener('touchmove', onFirstGesture, true);
+  clearInterval(scrollWatcher);
+}
 
-window.addEventListener('scroll', playMusic, { capture: true, passive: true });
-window.addEventListener('touchmove', playMusic, { capture: true, passive: true });
+// Registrar todos los eventos posibles
+['click', 'touchstart', 'touchend', 'pointerdown', 'pointerup', 'keydown']
+  .forEach(evt => document.addEventListener(evt, onFirstGesture, { capture: true, passive: true }));
 
-// Intento inmediato al cargar (por si el navegador lo permite)
+window.addEventListener('touchmove', onFirstGesture, { capture: true, passive: true });
+window.addEventListener('touchstart', onFirstGesture, { capture: true, passive: true });
+window.addEventListener('scroll', onFirstGesture, { capture: true, passive: true });
+window.addEventListener('wheel', onFirstGesture, { capture: true, passive: true });
+document.addEventListener('scroll', onFirstGesture, { capture: true, passive: true });
+document.addEventListener('touchmove', onFirstGesture, { capture: true, passive: true });
+
+// ===== Respaldo definitivo: detectar scroll manualmente =====
+let lastScrollPos = 0;
+const scrollWatcher = setInterval(() => {
+  if (autoplayDone) { clearInterval(scrollWatcher); return; }
+  const current = window.scrollY || window.pageYOffset || 0;
+  if (current !== lastScrollPos) {
+    lastScrollPos = current;
+    if (current > 5) {
+      playMusic();
+    }
+  }
+}, 200);
+
+// Intento inmediato al cargar la página
 window.addEventListener('load', () => {
   playMusic();
 });
