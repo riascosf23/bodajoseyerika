@@ -1277,6 +1277,31 @@ musicBtn.addEventListener('click', () => {
   isPlaying = !isPlaying;
 });
 
+
+/* ============ AUTOPLAY AL PRIMER TOQUE / SCROLL ============ */
+function startMusicOnFirstInteraction() {
+  if (!isPlaying) {
+    bgMusic.volume = 0.35;
+    bgMusic.play().then(() => {
+      isPlaying = true;
+      musicBtn.classList.add('playing');
+      musicBtn.innerHTML = '<i class="fas fa-pause"></i>';
+    }).catch(() => {});
+  }
+  // Se quitan los listeners para que no se repita
+  document.removeEventListener('click', startMusicOnFirstInteraction);
+  document.removeEventListener('touchstart', startMusicOnFirstInteraction);
+  document.removeEventListener('scroll', startMusicOnFirstInteraction);
+}
+
+document.addEventListener('click', startMusicOnFirstInteraction);
+document.addEventListener('touchstart', startMusicOnFirstInteraction);
+document.addEventListener('scroll', startMusicOnFirstInteraction, { once: true });
+
+
+
+
+
 /* ============ RSVP FORM ============ */
 
 
