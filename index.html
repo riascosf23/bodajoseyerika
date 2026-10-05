@@ -1268,6 +1268,12 @@ document.querySelectorAll('.faq-q').forEach(btn => {
    SISTEMA DE MÚSICA
 ========================================== */
 
+
+
+/* =====================================================
+   SISTEMA DE MÚSICA
+===================================================== */
+
 const musicBtn = document.getElementById("musicBtn");
 const bgMusic = document.getElementById("bgMusic");
 
@@ -1275,31 +1281,30 @@ let isPlaying = false;
 let musicStarted = false;
 
 
-/* ==========================================
+/* =====================================================
    CONFIGURACIÓN
-========================================== */
+===================================================== */
 
 bgMusic.volume = 0.35;
 
 
-/* ==========================================
-   INICIAR MÚSICA
-========================================== */
+/* =====================================================
+   FUNCIÓN PARA INICIAR LA MÚSICA
+===================================================== */
 
 function startMusic() {
 
-  // Si ya empezó, no hacer nada
-  if (musicStarted) {
+  if (musicStarted || isPlaying) {
     return;
   }
 
   bgMusic.volume = 0.35;
 
-  const playPromise = bgMusic.play();
+  const promise = bgMusic.play();
 
-  if (playPromise !== undefined) {
+  if (promise !== undefined) {
 
-    playPromise
+    promise
       .then(() => {
 
         isPlaying = true;
@@ -1315,15 +1320,13 @@ function startMusic() {
           "Pausar música"
         );
 
-        // Ya empezó la música
         removeMusicListeners();
 
       })
       .catch((error) => {
 
-        // El navegador bloqueó el autoplay
         console.log(
-          "El navegador bloqueó el autoplay:",
+          "Autoplay bloqueado:",
           error
         );
 
@@ -1332,18 +1335,13 @@ function startMusic() {
 }
 
 
-/* ==========================================
+/* =====================================================
    BOTÓN DE MÚSICA
-========================================== */
+===================================================== */
 
 musicBtn.addEventListener("click", function (event) {
 
   event.stopPropagation();
-
-
-  // ================================
-  // PAUSAR
-  // ================================
 
   if (isPlaying) {
 
@@ -1361,109 +1359,80 @@ musicBtn.addEventListener("click", function (event) {
       "Reproducir música"
     );
 
-    return;
+  } else {
+
+    bgMusic.volume = 0.35;
+
+    bgMusic.play()
+      .then(() => {
+
+        isPlaying = true;
+        musicStarted = true;
+
+        musicBtn.classList.add("playing");
+
+        musicBtn.innerHTML =
+          '<i class="fas fa-pause"></i>';
+
+        musicBtn.setAttribute(
+          "aria-label",
+          "Pausar música"
+        );
+
+        removeMusicListeners();
+
+      })
+      .catch((error) => {
+
+        console.log(
+          "Error al reproducir:",
+          error
+        );
+
+      });
   }
-
-
-  // ================================
-  // REPRODUCIR
-  // ================================
-
-  bgMusic.volume = 0.35;
-
-  bgMusic.play()
-    .then(() => {
-
-      isPlaying = true;
-      musicStarted = true;
-
-      musicBtn.classList.add("playing");
-
-      musicBtn.innerHTML =
-        '<i class="fas fa-pause"></i>';
-
-      musicBtn.setAttribute(
-        "aria-label",
-        "Pausar música"
-      );
-
-      removeMusicListeners();
-
-    })
-    .catch((error) => {
-
-      console.log(
-        "Error al reproducir:",
-        error
-      );
-
-    });
 
 });
 
 
-/* ==========================================
-   PRIMERA INTERACCIÓN
-========================================== */
+/* =====================================================
+   VARIABLES PARA DETECTAR EL DESLIZAMIENTO
+===================================================== */
 
-function firstInteraction() {
-  startMusic();
-}
+let touchStartY = 0;
+let touchCurrentY = 0;
 
+let touchStartX = 0;
+let touchCurrentX = 0;
 
-/* ==========================================
-   PC / PORTÁTIL
-========================================== */
-
-/*
-   Clic en la página
-*/
-document.addEventListener(
-  "click",
-  firstInteraction,
-  {
-    capture: true,
-    passive: true
-  }
-);
+let touchStarted = false;
 
 
-/*
-   Rueda del mouse
-*/
-document.addEventListener(
-  "wheel",
-  firstInteraction,
-  {
-    capture: true,
-    passive: true
-  }
-);
+/* =====================================================
+   CUANDO EL USUARIO PONE EL DEDO
+===================================================== */
 
-
-/*
-   Teclado
-*/
-document.addEventListener(
-  "keydown",
-  firstInteraction,
-  {
-    capture: true,
-    passive: true
-  }
-);
-
-
-/* ==========================================
-   CELULAR / TABLET
-========================================== */
-
-/*
-   Inicio del toque
-*/
 document.addEventListener(
   "touchstart",
-  firstInteraction,
+  function (event) {
+
+    if (musicStarted) {
+      return;
+    }
+
+    if (!event.touches || event.touches.length === 0) {
+      return;
+    }
+
+    touchStarted = true;
+
+    touchStartY = event.touches[0].clientY;
+    touchCurrentY = touchStartY;
+
+    touchStartX = event.touches[0].clientX;
+    touchCurrentX = touchStartX;
+
+  },
   {
     capture: true,
     passive: true
@@ -1471,12 +1440,60 @@ document.addEventListener(
 );
 
 
-/*
-   DESLIZAMIENTO DEL DEDO
-*/
+/* =====================================================
+   MIENTRAS EL DEDO SE DESLIZA
+===================================================== */
+
 document.addEventListener(
   "touchmove",
-  firstInteraction,
+  function (event) {
+
+    if (musicStarted || !touchStarted) {
+      return;
+    }
+
+    if (!event.touches || event.touches.length === 0) {
+      return;
+    }
+
+    touchCurrentY = event.touches[0].clientY;
+    touchCurrentX = event.touches[0].clientX;
+
+
+    /* -----------------------------------------------
+       DISTANCIA VERTICAL
+    ------------------------------------------------ */
+
+    const differenceY =
+      touchStartY - touchCurrentY;
+
+
+    /* -----------------------------------------------
+       DISTANCIA HORIZONTAL
+    ------------------------------------------------ */
+
+    const differenceX =
+      Math.abs(touchCurrentX - touchStartX);
+
+
+    /*
+       Con solamente 3 píxeles de desplazamiento
+       ya consideramos que el usuario está deslizando.
+
+       Esto permite detectar incluso un movimiento
+       MUY SUAVE hacia abajo.
+    */
+
+    if (
+      differenceY >= 3 &&
+      differenceY > differenceX
+    ) {
+
+      startMusic();
+
+    }
+
+  },
   {
     capture: true,
     passive: true
@@ -1484,12 +1501,17 @@ document.addEventListener(
 );
 
 
-/*
-   Fin del deslizamiento
-*/
+/* =====================================================
+   CUANDO TERMINA EL DESLIZAMIENTO
+===================================================== */
+
 document.addEventListener(
   "touchend",
-  firstInteraction,
+  function () {
+
+    touchStarted = false;
+
+  },
   {
     capture: true,
     passive: true
@@ -1497,13 +1519,65 @@ document.addEventListener(
 );
 
 
-/* ==========================================
-   SCROLL
-========================================== */
+/* =====================================================
+   SI EL USUARIO DESLIZA HACIA ARRIBA
+===================================================== */
+
+document.addEventListener(
+  "touchmove",
+  function (event) {
+
+    if (musicStarted || !touchStarted) {
+      return;
+    }
+
+    if (!event.touches || event.touches.length === 0) {
+      return;
+    }
+
+    const currentY =
+      event.touches[0].clientY;
+
+    const movement =
+      Math.abs(currentY - touchStartY);
+
+
+    /*
+       Cualquier movimiento vertical también
+       puede iniciar la música.
+
+       Esto cubre tanto:
+       ↓ deslizar hacia abajo
+       ↑ deslizar hacia arriba
+    */
+
+    if (movement >= 3) {
+
+      startMusic();
+
+    }
+
+  },
+  {
+    capture: true,
+    passive: true
+  }
+);
+
+
+/* =====================================================
+   SCROLL NORMAL DE LA PÁGINA
+===================================================== */
 
 window.addEventListener(
   "scroll",
-  firstInteraction,
+  function () {
+
+    if (!musicStarted) {
+      startMusic();
+    }
+
+  },
   {
     capture: true,
     passive: true
@@ -1511,65 +1585,94 @@ window.addEventListener(
 );
 
 
-/* ==========================================
-   QUITAR EVENTOS CUANDO LA MÚSICA COMIENZA
-========================================== */
+/* =====================================================
+   PC / PORTÁTIL
+===================================================== */
+
+
+/* Clic */
+
+document.addEventListener(
+  "click",
+  function () {
+
+    if (!musicStarted) {
+      startMusic();
+    }
+
+  },
+  {
+    capture: true,
+    passive: true
+  }
+);
+
+
+/* Rueda del mouse */
+
+document.addEventListener(
+  "wheel",
+  function () {
+
+    if (!musicStarted) {
+      startMusic();
+    }
+
+  },
+  {
+    capture: true,
+    passive: true
+  }
+);
+
+
+/* Teclado */
+
+document.addEventListener(
+  "keydown",
+  function () {
+
+    if (!musicStarted) {
+      startMusic();
+    }
+
+  },
+  {
+    capture: true,
+    passive: true
+  }
+);
+
+
+/* =====================================================
+   INTENTO AL CARGAR
+===================================================== */
+
+window.addEventListener(
+  "load",
+  function () {
+
+    startMusic();
+
+  }
+);
+
+
+/* =====================================================
+   QUITAR LISTENERS
+===================================================== */
 
 function removeMusicListeners() {
 
-  document.removeEventListener(
-    "click",
-    firstInteraction,
-    true
-  );
+  /*
+     No eliminamos todos los listeners del botón.
+     El botón debe seguir funcionando para
+     pausar/reanudar la música.
+  */
 
-  document.removeEventListener(
-    "wheel",
-    firstInteraction,
-    true
-  );
+  console.log("🎵 Música iniciada correctamente");
 
-  document.removeEventListener(
-    "keydown",
-    firstInteraction,
-    true
-  );
-
-  document.removeEventListener(
-    "touchstart",
-    firstInteraction,
-    true
-  );
-
-  document.removeEventListener(
-    "touchmove",
-    firstInteraction,
-    true
-  );
-
-  document.removeEventListener(
-    "touchend",
-    firstInteraction,
-    true
-  );
-
-  window.removeEventListener(
-    "scroll",
-    firstInteraction,
-    true
-  );
 }
-
-
-/* ==========================================
-   INTENTO AUTOMÁTICO AL CARGAR
-========================================== */
-
-window.addEventListener("load", function () {
-
-  startMusic();
-
-});
 
 
 
