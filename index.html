@@ -1264,94 +1264,311 @@ document.querySelectorAll('.faq-q').forEach(btn => {
 
 /* ============ MÚSICA ============ */
 
+/* ==========================================
+   SISTEMA DE MÚSICA
+========================================== */
 
-/* ============ MÚSICA ============ */
-const musicBtn = document.getElementById('musicBtn');
-const bgMusic = document.getElementById('bgMusic');
+const musicBtn = document.getElementById("musicBtn");
+const bgMusic = document.getElementById("bgMusic");
+
 let isPlaying = false;
-let autoplayDone = false;
+let musicStarted = false;
 
-// ===== Función principal para reproducir =====
-function playMusic() {
-  if (autoplayDone || isPlaying) return;
+
+/* ==========================================
+   CONFIGURACIÓN
+========================================== */
+
+bgMusic.volume = 0.35;
+
+
+/* ==========================================
+   INICIAR MÚSICA
+========================================== */
+
+function startMusic() {
+
+  // Si ya empezó, no hacer nada
+  if (musicStarted) {
+    return;
+  }
+
   bgMusic.volume = 0.35;
-  const p = bgMusic.play();
-  if (p !== undefined) {
-    p.then(() => {
-      autoplayDone = true;
-      isPlaying = true;
-      musicBtn.classList.add('playing');
-      musicBtn.innerHTML = '<i class="fas fa-pause"></i>';
-      removeAllListeners();
-    }).catch(() => {
-      // El navegador aún no permite, se reintentará en el próximo gesto
-    });
+
+  const playPromise = bgMusic.play();
+
+  if (playPromise !== undefined) {
+
+    playPromise
+      .then(() => {
+
+        isPlaying = true;
+        musicStarted = true;
+
+        musicBtn.classList.add("playing");
+
+        musicBtn.innerHTML =
+          '<i class="fas fa-pause"></i>';
+
+        musicBtn.setAttribute(
+          "aria-label",
+          "Pausar música"
+        );
+
+        // Ya empezó la música
+        removeMusicListeners();
+
+      })
+      .catch((error) => {
+
+        // El navegador bloqueó el autoplay
+        console.log(
+          "El navegador bloqueó el autoplay:",
+          error
+        );
+
+      });
   }
 }
 
-// ===== Botón flotante de música (manual) =====
-musicBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
+
+/* ==========================================
+   BOTÓN DE MÚSICA
+========================================== */
+
+musicBtn.addEventListener("click", function (event) {
+
+  event.stopPropagation();
+
+
+  // ================================
+  // PAUSAR
+  // ================================
+
   if (isPlaying) {
+
     bgMusic.pause();
+
     isPlaying = false;
-    musicBtn.classList.remove('playing');
-    musicBtn.innerHTML = '<i class="fas fa-music"></i>';
-  } else {
-    bgMusic.volume = 0.35;
-    bgMusic.play().then(() => {
-      isPlaying = true;
-      autoplayDone = true;
-      musicBtn.classList.add('playing');
-      musicBtn.innerHTML = '<i class="fas fa-pause"></i>';
-    }).catch(err => console.log('Error al reproducir:', err));
+
+    musicBtn.classList.remove("playing");
+
+    musicBtn.innerHTML =
+      '<i class="fas fa-music"></i>';
+
+    musicBtn.setAttribute(
+      "aria-label",
+      "Reproducir música"
+    );
+
+    return;
   }
+
+
+  // ================================
+  // REPRODUCIR
+  // ================================
+
+  bgMusic.volume = 0.35;
+
+  bgMusic.play()
+    .then(() => {
+
+      isPlaying = true;
+      musicStarted = true;
+
+      musicBtn.classList.add("playing");
+
+      musicBtn.innerHTML =
+        '<i class="fas fa-pause"></i>';
+
+      musicBtn.setAttribute(
+        "aria-label",
+        "Pausar música"
+      );
+
+      removeMusicListeners();
+
+    })
+    .catch((error) => {
+
+      console.log(
+        "Error al reproducir:",
+        error
+      );
+
+    });
+
 });
 
-// ===== Autoplay: primer toque, clic o scroll =====
-function onFirstGesture() {
-  playMusic();
+
+/* ==========================================
+   PRIMERA INTERACCIÓN
+========================================== */
+
+function firstInteraction() {
+  startMusic();
 }
 
-function removeAllListeners() {
-  ['click', 'touchstart', 'touchend', 'pointerdown', 'pointerup', 'keydown']
-    .forEach(evt => document.removeEventListener(evt, onFirstGesture, true));
-  window.removeEventListener('touchmove', onFirstGesture, true);
-  window.removeEventListener('touchstart', onFirstGesture, true);
-  window.removeEventListener('scroll', onFirstGesture, true);
-  window.removeEventListener('wheel', onFirstGesture, true);
-  document.removeEventListener('scroll', onFirstGesture, true);
-  document.removeEventListener('touchmove', onFirstGesture, true);
-  clearInterval(scrollWatcher);
-}
 
-// Registrar todos los eventos posibles
-['click', 'touchstart', 'touchend', 'pointerdown', 'pointerup', 'keydown']
-  .forEach(evt => document.addEventListener(evt, onFirstGesture, { capture: true, passive: true }));
+/* ==========================================
+   PC / PORTÁTIL
+========================================== */
 
-window.addEventListener('touchmove', onFirstGesture, { capture: true, passive: true });
-window.addEventListener('touchstart', onFirstGesture, { capture: true, passive: true });
-window.addEventListener('scroll', onFirstGesture, { capture: true, passive: true });
-window.addEventListener('wheel', onFirstGesture, { capture: true, passive: true });
-document.addEventListener('scroll', onFirstGesture, { capture: true, passive: true });
-document.addEventListener('touchmove', onFirstGesture, { capture: true, passive: true });
-
-// ===== Respaldo definitivo: detectar scroll manualmente =====
-let lastScrollPos = 0;
-const scrollWatcher = setInterval(() => {
-  if (autoplayDone) { clearInterval(scrollWatcher); return; }
-  const current = window.scrollY || window.pageYOffset || 0;
-  if (current !== lastScrollPos) {
-    lastScrollPos = current;
-    if (current > 5) {
-      playMusic();
-    }
+/*
+   Clic en la página
+*/
+document.addEventListener(
+  "click",
+  firstInteraction,
+  {
+    capture: true,
+    passive: true
   }
-}, 200);
+);
 
-// Intento inmediato al cargar la página
-window.addEventListener('load', () => {
-  playMusic();
+
+/*
+   Rueda del mouse
+*/
+document.addEventListener(
+  "wheel",
+  firstInteraction,
+  {
+    capture: true,
+    passive: true
+  }
+);
+
+
+/*
+   Teclado
+*/
+document.addEventListener(
+  "keydown",
+  firstInteraction,
+  {
+    capture: true,
+    passive: true
+  }
+);
+
+
+/* ==========================================
+   CELULAR / TABLET
+========================================== */
+
+/*
+   Inicio del toque
+*/
+document.addEventListener(
+  "touchstart",
+  firstInteraction,
+  {
+    capture: true,
+    passive: true
+  }
+);
+
+
+/*
+   DESLIZAMIENTO DEL DEDO
+*/
+document.addEventListener(
+  "touchmove",
+  firstInteraction,
+  {
+    capture: true,
+    passive: true
+  }
+);
+
+
+/*
+   Fin del deslizamiento
+*/
+document.addEventListener(
+  "touchend",
+  firstInteraction,
+  {
+    capture: true,
+    passive: true
+  }
+);
+
+
+/* ==========================================
+   SCROLL
+========================================== */
+
+window.addEventListener(
+  "scroll",
+  firstInteraction,
+  {
+    capture: true,
+    passive: true
+  }
+);
+
+
+/* ==========================================
+   QUITAR EVENTOS CUANDO LA MÚSICA COMIENZA
+========================================== */
+
+function removeMusicListeners() {
+
+  document.removeEventListener(
+    "click",
+    firstInteraction,
+    true
+  );
+
+  document.removeEventListener(
+    "wheel",
+    firstInteraction,
+    true
+  );
+
+  document.removeEventListener(
+    "keydown",
+    firstInteraction,
+    true
+  );
+
+  document.removeEventListener(
+    "touchstart",
+    firstInteraction,
+    true
+  );
+
+  document.removeEventListener(
+    "touchmove",
+    firstInteraction,
+    true
+  );
+
+  document.removeEventListener(
+    "touchend",
+    firstInteraction,
+    true
+  );
+
+  window.removeEventListener(
+    "scroll",
+    firstInteraction,
+    true
+  );
+}
+
+
+/* ==========================================
+   INTENTO AUTOMÁTICO AL CARGAR
+========================================== */
+
+window.addEventListener("load", function () {
+
+  startMusic();
+
 });
 
 
